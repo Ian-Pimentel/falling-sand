@@ -15,19 +15,36 @@ main :: proc() {
 
 	tick_acc: f32 = 0.0
 
+	grid: game.Grid 
+	// game.set_cell(&grid, {game.GRID_WIDTH / 2, /* game.GRID_HEIGHT / 2 */0}, .SAND)
+	
 	for !rl.WindowShouldClose() {
 		delta := rl.GetFrameTime()
 		tick_acc += delta
+
 		for tick_acc >= TICK_RATE {
+			if rl.IsMouseButtonDown(.LEFT) {
+				mouse_pos := rl.GetMousePosition() 
+				mouse_pos /= renderer.CELL_SIZE
+				game.try_set_cell(&grid, {int(mouse_pos.x), int(mouse_pos.y)}, .SAND)
+			}
+			if rl.IsMouseButtonDown(.RIGHT) {
+				mouse_pos := rl.GetMousePosition() 
+				mouse_pos /= renderer.CELL_SIZE
+				game.try_set_cell(&grid, {int(mouse_pos.x), int(mouse_pos.y)}, .WATER)
+			}
+			if rl.IsKeyPressed(.R) {
+				game.init_grid(&grid)
+			}
 			
-			game.update()
+			game.update(&grid)
 			
 			tick_acc -= TICK_RATE
 		}
 		
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
-		renderer.draw()
+		renderer.draw(&grid)
 		rl.EndDrawing()
 	}
 
