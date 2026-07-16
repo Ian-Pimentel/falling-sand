@@ -7,6 +7,12 @@ TARGET_FPS :: 60
 
 TICK_RATE :: 1.0 / 60
 
+mouse_pos_to_coords :: proc() -> rl.Vector2 {
+	mouse_pos := rl.GetMousePosition() 
+	mouse_pos /= renderer.CELL_SIZE
+	return mouse_pos
+}
+
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
@@ -14,9 +20,9 @@ main :: proc() {
 	rl.SetTargetFPS(TARGET_FPS)
 
 	tick_acc: f32 = 0.0
+	brush_radius: f32 = 1.0
 
 	grid: game.Grid 
-	// game.set_cell(&grid, {game.GRID_WIDTH / 2, /* game.GRID_HEIGHT / 2 */0}, .SAND)
 	for !rl.WindowShouldClose() {
 		num_sand := 0
 		num_water := 0
@@ -24,16 +30,17 @@ main :: proc() {
 		tick_acc += delta
 
 		for tick_acc >= TICK_RATE {
+			brush_radius = math.max(1, math.min(brush_radius + rl.GetMouseWheelMove(), 20))
+
 			if rl.IsMouseButtonDown(.LEFT) {
-				mouse_pos := rl.GetMousePosition() 
-				mouse_pos /= renderer.CELL_SIZE
-				game.try_set_cell(&grid, {int(mouse_pos.x), int(mouse_pos.y)}, .SAND)
+				coords := mouse_pos_to_coords()
+				game.spawn_circle(&grid, {int(coords.x), int(coords.y)}, brush_radius, game.Material.SAND)
 			}
 			if rl.IsMouseButtonDown(.RIGHT) {
-				mouse_pos := rl.GetMousePosition() 
-				mouse_pos /= renderer.CELL_SIZE
-				game.try_set_cell(&grid, {int(mouse_pos.x), int(mouse_pos.y)}, .WATER)
+				coords := mouse_pos_to_coords()
+				game.spawn_circle(&grid, {int(coords.x), int(coords.y)}, brush_radius, game.Material.WATER)
 			}
+			
 			if rl.IsKeyPressed(.R) {
 				game.init_grid(&grid)
 			}
@@ -43,15 +50,16 @@ main :: proc() {
 			tick_acc -= TICK_RATE
 
 			for cell in grid {
-				if cell == .SAND do num_sand += 1
-				else if cell == .WATER do num_water += 1
+				if cell.material == .SAND do num_sand += 1
+				else if cell.material == .WATER do num_water += 1
 			}
 		}
 		
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
-		renderer.draw(&grid)
+		renderer.draw(&grid, brush_radius)
 		rl.DrawText(fmt.ctprintfln("num of sand => %i\nnum of water => %i", num_sand, num_water), 0,0,10,rl.WHITE)
+		rl.DrawText(fmt.ctprintfln("mouse_wheel %f", brush_radius), 0,20,20,rl.WHITE)
 		rl.EndDrawing()
 
 		free_all(context.temp_allocator)
@@ -60,6 +68,7 @@ main :: proc() {
 	fmt.println("Game Over")
 }
 
+import "core:math"
 import "core:fmt"
 import rl "vendor:raylib"
 import "game"

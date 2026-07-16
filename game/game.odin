@@ -3,19 +3,25 @@ package game
 Vec2i :: [2]int
 
 update :: proc(grid: ^Grid) {
-	// esse reverse sepá só funciona pra movimentos pra baixo, nn tenho ctz :( mas foi a gambiarra q pensei na hora.
-	// gases ou por exemplo um impacto que joga o material pra cima vai quebrar
-	#reverse for cell, i in grid {
-		if cell == .AIR do continue
+	cells_updated := 0
+	for &cell, i in grid {
+		if cell.material == .AIR || cell.updated do continue
+		
 		row_offset := rand.float32_range(0, 1) > .5 ? 1 : -1
 		position := get_position(i)
-		#partial switch cell {
+
+		cells_updated += 1
+		cell.updated = true
+		#partial switch cell.material {
 		case .WATER:
 			update_water(position, grid, row_offset)
 		case .SAND:
 			update_sand(position, grid, row_offset)
 		}
 	}
+
+	for &cell, i in grid do cell.updated = false
+	fmt.printfln("cells updated => %i", cells_updated)
 }
 
 update_sand :: proc(current_position: Vec2i, grid: ^Grid, row_offset: int) {
@@ -26,7 +32,7 @@ update_sand :: proc(current_position: Vec2i, grid: ^Grid, row_offset: int) {
 
 	for possible_position in possible_positions {
 		if !is_position_within_bound(possible_position) do continue
-			swap_material(grid, current_position, possible_position)
+			swap_cells(grid, current_position, possible_position)
 	}
 } 
 
@@ -39,7 +45,7 @@ update_water :: proc(current_position: Vec2i, grid: ^Grid, row_offset: int) {
 
 	for possible_position in possible_positions {
 		if !is_position_within_bound(possible_position) do continue
-			swap_material(grid, current_position, possible_position)
+			swap_cells(grid, current_position, possible_position)
 	}
 }  
 
