@@ -17,8 +17,9 @@ main :: proc() {
 
 	grid: game.Grid 
 	// game.set_cell(&grid, {game.GRID_WIDTH / 2, /* game.GRID_HEIGHT / 2 */0}, .SAND)
-	
 	for !rl.WindowShouldClose() {
+		num_sand := 0
+		num_water := 0
 		delta := rl.GetFrameTime()
 		tick_acc += delta
 
@@ -40,12 +41,20 @@ main :: proc() {
 			game.update(&grid)
 			
 			tick_acc -= TICK_RATE
+
+			for cell in grid {
+				if cell == .SAND do num_sand += 1
+				else if cell == .WATER do num_water += 1
+			}
 		}
 		
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 		renderer.draw(&grid)
+		rl.DrawText(fmt.ctprintfln("num of sand => %i\nnum of water => %i", num_sand, num_water), 0,0,10,rl.WHITE)
 		rl.EndDrawing()
+
+		free_all(context.temp_allocator)
 	}
 
 	fmt.println("Game Over")
